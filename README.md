@@ -68,6 +68,8 @@ Looking up a query for the first time will hit duckduckgo and you will see `cach
 
 Looking up a query for the 2nd time will not hit duckduckgo and you will see `cached = true`
 
+
+```bash
 curl http://127.0.0.1:8000/search/duckduckgo/google/
 {
   "cached": true,
@@ -77,10 +79,13 @@ curl http://127.0.0.1:8000/search/duckduckgo/google/
     "Goggles Goggles, or safety glasses, are forms of protective eyewear that usually enclose or protect the..."
   ]
 }
+```
 
 
 Looking up a query that my be cached but you don't want not cached version
 
+
+```bash
 curl http://127.0.0.1:8000/search/duckduckgo/google?use-cache=false
 {
   "cached": false,
@@ -90,6 +95,7 @@ curl http://127.0.0.1:8000/search/duckduckgo/google?use-cache=false
     "Goggles Goggles, or safety glasses, are forms of protective eyewear that usually enclose or protect the..."
   ]
 }
+```
 
 
 **Expected outcome**: a publicly availble web service.
