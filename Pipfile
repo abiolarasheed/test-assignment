@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+ipython = "*"
+
+[packages]
+requests = "*"
+aiohttp = "*"
+flask = "*"
+gunicorn = "*"
+redis = "*"
+coverage = "*"
+
+[requires]
+python_version = "3.6"
