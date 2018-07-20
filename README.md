@@ -89,7 +89,7 @@ curl http://127.0.0.1:8000/search/duckduckgo/google/
 ```
 
 
-Looking up a query that my be cached but you don't want not cached version
+Looking up a query that may be cached but you don't want a cached version
 
 
 ```bash
