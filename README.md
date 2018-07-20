@@ -29,14 +29,21 @@ Fork this repository before the work and open a pull request after so we can see
     >>> # search single word
     >>> results = search_engine.search_duck_duck_go(['Ireland'])
     >>> # top 3 results
-    >>>
+    >>> DictService.get_top_3(results[0])
+    ... ['Ireland An island in the North Atlantic.',
+    ...  'Northern Ireland A part of the United Kingdom in the ',
+    ...  'United Kingdom of Great Britain and Ireland A sovereign']
+    ...
     >>> search.get_word()  # Get one random word given url
     ... 'transportingly'
+    >>>
     >>> search.s.list_all_words()  # List 100 random words
     ... ['eradicatory', 'becomingness','sidetracking', ....]
+    >>>
     >>> len(search.list_all_words())
     ... 100
     >>>  search.search_all()  # Search 100 random words from file on DuckDuckGo and save to file.
+    >>>
 ```
 
 # Test Assignment No. 2
@@ -52,7 +59,7 @@ To start the app please note that the dev server will not work fine with this se
     gunicorn --bind 0.0.0.0:8000 wsgi
 ```
 
-Looking up a query for the first time will hit duckduckgo and you will see `cached = false`
+Looking up a query for the first time will hit DuckDuckGo and you will see `cached = false`
 
 ```bash
     curl http://127.0.0.1:8000/search/duckduckgo/google/
@@ -66,7 +73,7 @@ Looking up a query for the first time will hit duckduckgo and you will see `cach
     }
 ```
 
-Looking up a query for the 2nd time will not hit duckduckgo and you will see `cached = true`
+Looking up a query for the 2nd time will not hit DuckDuckGo and you will see `cached = true`
 
 
 ```bash
