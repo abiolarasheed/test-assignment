@@ -44,7 +44,7 @@ Turn the script you created earlier into a proxy service. It should response to 
 
 
 # Usage
-To start the app please not that the dev server will not work fine with this settup due to the event loop
+To start the app please note that the dev server will not work fine with this setup due to the event loop
 
 
 ```bash
