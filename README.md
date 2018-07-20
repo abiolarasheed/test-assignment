@@ -105,4 +105,11 @@ curl http://127.0.0.1:8000/search/duckduckgo/google?use-cache=false
 ```
 
 
-**Expected outcome**: a publicly availble web service.
+**Expected outcome**: a publicly available web service.
+
+Hosted on Digital Ocean @ http://159.65.88.243/search/duckduckgo/
+
+
+```
+    curl http://159.65.88.243/search/duckduckgo/google
+```
