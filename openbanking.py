@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+import random
+
 WORDS_FILE_NAME = 'words.txt'
+NUM_TO_SEARCH = 100
 
 
 def get_words(words_file_name):
@@ -14,5 +17,11 @@ def get_words(words_file_name):
     return words
 
 
+def get_titles(num_to_search, words_file_name):
+    words = get_words(words_file_name)
+    sample = random.sample(words, num_to_search)
+    return sample
+
+
 if __name__ == "__main__":
-    print(len(get_words(WORDS_FILE_NAME)))
+    print(len(get_titles(NUM_TO_SEARCH, WORDS_FILE_NAME)))
