@@ -1,20 +1,50 @@
 #!/usr/bin/env python3
 
+import asyncio
+from aiohttp import ClientSession
 import random
-import requests
 import json
 from bs4 import BeautifulSoup  # duckduckgo's api is not full search results
 
-BASE_URL = 'https://start.duckduckgo.com/html/'
-NUM_TO_SEARCH = 5
-NUM_TOP_TITLES = 3
+BASE_URL = 'https://start.duckduckgo.com/html/?q='
+
+# be careful with the next two variables, duckduckgo bans the ip for 'a few
+# hours' if we send more than unspecified number of queries/second
+# https://duck.co/help/privacy/ip-blocking
+SEMAPHORE_COUNTER = 3  # kinda simultaneous requests
+NUM_WORDS_TO_SEARCH = 5
+
+NUM_TOP_TITLES = 3  # how many result titles to return at most
 WORDS_FILE_NAME = 'words.txt'
 
 
-def query_duck(word):
-    payload = {'q': word}
-    r = requests.get(BASE_URL, params=payload)
-    return r.text
+async def fetch(url, session):
+    async with session.get(url) as response:
+        return await response.read()
+
+
+async def bound_fetch(sem, word, session):
+    async with sem:
+        html = await fetch(f'{BASE_URL}{word}', session)
+        soup = BeautifulSoup(html, 'html.parser')
+        titles = soup.find_all('a', class_='result__a', limit=NUM_TOP_TITLES)
+        titles_texts = [title.get_text() for title in titles]
+        return {word: titles_texts}
+
+
+async def get_results(words):
+    """
+    Credit: https://pawelmhm.github.io/asyncio/python/aiohttp/2016/04/22/asyncio-aiohttp.html
+    """
+    tasks = []
+    sem = asyncio.Semaphore(SEMAPHORE_COUNTER)
+    async with ClientSession() as session:
+        for word in words:
+            task = asyncio.ensure_future(bound_fetch(sem, word, session))
+            tasks.append(task)
+
+        responses = await asyncio.gather(*tasks)
+        return responses
 
 
 def get_words(words_file_name):
@@ -28,20 +58,22 @@ def get_words(words_file_name):
     return words
 
 
-def get_titles(num_to_search, num_titles, words_file_name):
-    words = get_words(words_file_name)
-    sample = random.sample(words, num_to_search)
-    results = {}
-    for word in sample:
-        duck_text = query_duck(word)
-        soup = BeautifulSoup(duck_text, 'html.parser')
-        titles = soup.find_all('a', class_='result__a', limit=num_titles)
-        titles_texts = [title.get_text() for title in titles]
-        results[word] = titles_texts
-    results_json = json.dumps(results, sort_keys=True, indent=4)
+def get_titles(sample):
+    loop = asyncio.get_event_loop()
+    future = asyncio.ensure_future(get_results(sample))
+    results = loop.run_until_complete(future)
+
+    combined_results = {}
+    for result in results:
+        combined_results.update(result)
+
+    results_json = json.dumps(combined_results, sort_keys=True, indent=4)
     return results_json
 
 
 if __name__ == "__main__":
-    results = get_titles(NUM_TO_SEARCH, NUM_TOP_TITLES, WORDS_FILE_NAME)
-    print(results)
+    words = get_words(WORDS_FILE_NAME)
+    sample = random.sample(words, NUM_WORDS_TO_SEARCH)
+
+    result = get_titles(sample)
+    print(result)
