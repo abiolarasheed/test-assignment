@@ -5,6 +5,7 @@ from aiohttp import ClientSession
 import random
 import json
 from bs4 import BeautifulSoup  # duckduckgo's api is not full search results
+from aiohttp import web
 
 BASE_URL = 'https://start.duckduckgo.com/html/?q='
 
@@ -58,10 +59,8 @@ def get_words(words_file_name):
     return words
 
 
-def get_titles(sample):
-    loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(get_results(sample))
-    results = loop.run_until_complete(future)
+async def get_titles(sample):
+    results = await get_results(sample)
 
     combined_results = {}
     for result in results:
@@ -71,9 +70,21 @@ def get_titles(sample):
     return results_json
 
 
-if __name__ == "__main__":
-    words = get_words(WORDS_FILE_NAME)
-    sample = random.sample(words, NUM_WORDS_TO_SEARCH)
+async def handle(request):
+    word = request.match_info.get('word', 'spam')
+    result = await get_titles([word])
+    return web.Response(text=result)
 
-    result = get_titles(sample)
-    print(result)
+
+if __name__ == "__main__":
+    # web app
+    app = web.Application()
+    app.add_routes([web.get('/search/duckduckgo/{word}', handle)])
+    web.run_app(app)
+
+    # # script
+    # words = get_words(WORDS_FILE_NAME)
+    # sample = random.sample(words, NUM_WORDS_TO_SEARCH)
+
+    # result = get_titles(sample)
+    # print(result)
