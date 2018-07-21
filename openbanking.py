@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import asyncio
-from aiohttp import ClientSession
+from aiohttp import ClientSession, web
 import random
 import json
 from bs4 import BeautifulSoup  # duckduckgo's api is not full search results
-from aiohttp import web
 
 BASE_URL = 'https://start.duckduckgo.com/html/?q='
 
@@ -60,6 +59,9 @@ def get_words(words_file_name):
 
 
 async def get_titles(sample):
+    if sample in cache:
+        return cache[sample]
+
     results = await get_results(sample)
 
     combined_results = {}
@@ -67,17 +69,19 @@ async def get_titles(sample):
         combined_results.update(result)
 
     results_json = json.dumps(combined_results, sort_keys=True, indent=4)
+    cache[sample] = results_json
     return results_json
 
 
 async def handle(request):
     word = request.match_info.get('word', 'spam')
-    result = await get_titles([word])
+    result = await get_titles((word,))
     return web.Response(text=result)
 
 
 if __name__ == "__main__":
     # web app
+    cache = {}  # or lru_cache, pymemoize... will they work with async?
     app = web.Application()
     app.add_routes([web.get('/search/duckduckgo/{word}', handle)])
     web.run_app(app)
