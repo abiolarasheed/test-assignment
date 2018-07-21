@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 
 import random
+import requests
 
+BASE_URL = 'https://start.duckduckgo.com/html/'
+NUM_TO_SEARCH = 5
 WORDS_FILE_NAME = 'words.txt'
-NUM_TO_SEARCH = 100
+
+
+def query_duck(word):
+    payload = {'q': word}
+    r = requests.get(BASE_URL, params=payload)
+    return r.text
 
 
 def get_words(words_file_name):
@@ -20,7 +28,8 @@ def get_words(words_file_name):
 def get_titles(num_to_search, words_file_name):
     words = get_words(words_file_name)
     sample = random.sample(words, num_to_search)
-    return sample
+    duck_text = query_duck(sample[0])
+    return duck_text
 
 
 if __name__ == "__main__":
