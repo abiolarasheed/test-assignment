@@ -2,9 +2,12 @@
 
 import random
 import requests
+import json
+from bs4 import BeautifulSoup  # duckduckgo's api is not full search results
 
 BASE_URL = 'https://start.duckduckgo.com/html/'
 NUM_TO_SEARCH = 5
+NUM_TOP_TITLES = 3
 WORDS_FILE_NAME = 'words.txt'
 
 
@@ -25,12 +28,20 @@ def get_words(words_file_name):
     return words
 
 
-def get_titles(num_to_search, words_file_name):
+def get_titles(num_to_search, num_titles, words_file_name):
     words = get_words(words_file_name)
     sample = random.sample(words, num_to_search)
-    duck_text = query_duck(sample[0])
-    return duck_text
+    results = {}
+    for word in sample:
+        duck_text = query_duck(word)
+        soup = BeautifulSoup(duck_text, 'html.parser')
+        titles = soup.find_all('a', class_='result__a', limit=num_titles)
+        titles_texts = [title.get_text() for title in titles]
+        results[word] = titles_texts
+    results_json = json.dumps(results, sort_keys=True, indent=4)
+    return results_json
 
 
 if __name__ == "__main__":
-    print(len(get_titles(NUM_TO_SEARCH, WORDS_FILE_NAME)))
+    results = get_titles(NUM_TO_SEARCH, NUM_TOP_TITLES, WORDS_FILE_NAME)
+    print(results)
