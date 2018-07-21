@@ -17,6 +17,8 @@ NUM_WORDS_TO_SEARCH = 5
 NUM_TOP_TITLES = 3  # how many result titles to return at most
 WORDS_FILE_NAME = 'words.txt'
 
+cache = {}  # or lru_cache, pymemoize... will they work with async?
+
 
 async def fetch(url, session):
     async with session.get(url) as response:
@@ -58,17 +60,21 @@ def get_words(words_file_name):
     return words
 
 
-async def get_titles(sample):
-    if sample in cache:
-        return cache[sample]
-
-    results = await get_results(sample)
-
+def results_to_json(results):
     combined_results = {}
     for result in results:
         combined_results.update(result)
 
     results_json = json.dumps(combined_results, sort_keys=True, indent=4)
+    return results_json
+
+
+async def get_titles(sample):
+    if sample in cache:
+        return cache[sample]
+    results = await get_results(sample)
+
+    results_json = results_to_json(results)
     cache[sample] = results_json
     return results_json
 
@@ -79,11 +85,15 @@ async def handle(request):
     return web.Response(text=result)
 
 
-if __name__ == "__main__":
-    # web app
-    cache = {}  # or lru_cache, pymemoize... will they work with async?
+def get_app():
     app = web.Application()
     app.add_routes([web.get('/search/duckduckgo/{word}', handle)])
+    return app
+
+
+if __name__ == "__main__":
+    # web app
+    app = get_app()
     web.run_app(app)
 
     # # script
