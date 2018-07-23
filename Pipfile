@@ -13,6 +13,7 @@ flask = "*"
 gunicorn = "*"
 redis = "*"
 coverage = "*"
+"beautifulsoup4" = "*"
 
 [requires]
 python_version = "3.6"
