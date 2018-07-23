@@ -8,11 +8,13 @@
     :copyright: © 2018 by the Abiola Rasheed.
     :license: PRIVATE PROPERTY.
 """
-
 import aiohttp
 import asyncio
+import random
 
 from weakref import WeakKeyDictionary
+
+from bs4 import BeautifulSoup
 
 
 class WordDescriptor:
@@ -32,8 +34,13 @@ class WordDescriptor:
 
             else:
                 word = self.__class__.word_validator(word_or_list)
-                sorted_words.append(word)
+                set(sorted_words.append(word))
 
+            # Ensure no duplicate is stored ever
+            sorted_words = set(sorted_words)
+
+            # Maintain sorted list only
+            sorted_words = sorted(list(sorted_words))
             self.__sorted_words[instance] = sorted_words
 
     @staticmethod
@@ -51,21 +58,32 @@ class WordDescriptor:
         return word
 
 
-async def fetch(session, api):
+async def fetch(session, searched_term, url):
     """Launch requests for an api."""
-    async with session.get(api) as response:
+    delay = random.randint(0, 3)
+    await asyncio.sleep(delay)
+    async with session.get(url) as response:
         if response.status == 200:
-            return await response.text()
+            html_content = await response.read()
+
+            semaphore = asyncio.Semaphore(2)
+            # Without this we can't make the statement below wait
+            with await semaphore:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                top_titles = soup.find_all('a', class_='result__a', limit=3)
+                results = [title.get_text() for title in top_titles]
+                return {searched_term: results}
 
 
 async def fetch_all(api_list):
     """Launch requests for multiple api."""
     tasks = []
-    timeout = aiohttp.ClientTimeout(total=20)
+    timeout = aiohttp.ClientTimeout(total=10)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        for api in api_list:
-            task = asyncio.ensure_future(fetch(session, api))
-            tasks.append(task)  # Create list of tasks
+        for content in api_list:
+            for searched_term, url in content.items():
+                task = asyncio.ensure_future(fetch(session, searched_term, url))
+                tasks.append(task)  # Create list of tasks
         results = await asyncio.gather(*tasks)  # Gather all the task responses
         return results
