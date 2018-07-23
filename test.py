@@ -72,7 +72,6 @@ class DictServiceTestCase(TestCase):
 
                 # Test cache on second call to same url
                 result = self.app.get('/search/duckduckgo/yelp')
-                # convert response json to dict
                 data = json.loads(result.data)
 
                 # Test that result on 2nd call was from cache
@@ -80,6 +79,5 @@ class DictServiceTestCase(TestCase):
 
                 # Test disable cache via query string works
                 result = self.app.get('/search/duckduckgo/yelp?use-cache=false')
-                # convert response json to dict
                 data = json.loads(result.data)
                 self.assertEqual(data.get("cached"), False)
