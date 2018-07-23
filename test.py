@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    test-assignment.views
+    test-assignment.test
     ~~~~~~~~~
 
     This script exposes the main search.
@@ -21,28 +21,27 @@ response_json = [{'yelp': ["Yelf's Hotel, Ryde - Best Price Guarantee.",
                  ]
 
 
-def mock_search(words):
-    del words  # Keeps Pycharm happy
+# Fake redis storage
+cache = {}
 
+
+class MockRedis:
+    @staticmethod
+    def get(words):
+        return cache.get(words)
+
+    @staticmethod
+    def set(key, value):
+        global cache
+
+        return cache.update({key: value})
+
+
+def mock_search(words):
     class MockDictService(DictService):
         def search_duck_duck_go(self, searched_term):
-            del searched_term
             return response_json
     return MockDictService()
-
-
-def mock_redis():
-    class MockRedis:
-        def __init__(self):
-            self.cache = {}
-
-        def get(self, words):
-            return self.cache.get(words)
-
-        def set(self, key, value):
-            return self.cache.update({key: value})
-
-    return MockRedis()
 
 
 @mock.patch.object(DictService, 'search_duck_duck_go', return_value=response_json)
@@ -52,9 +51,8 @@ class DictServiceTestCase(TestCase):
         self.app.testing = True
 
     def test_search(self, word):
-        del word  # Keeps Pycharm happy
-        with mock.patch('views.cache.get', side_effect=mock_redis().get):
-            with mock.patch('views.cache.set', side_effect=mock_redis().set):
+        with mock.patch('views.cache.get', side_effect=MockRedis.get):
+            with mock.patch('views.cache.set', side_effect=MockRedis.set):
                 result = self.app.get('/search/duckduckgo/yelp')
 
                 # assert the status code of the response
@@ -62,8 +60,26 @@ class DictServiceTestCase(TestCase):
 
                 # convert response json to dict
                 data = json.loads(result.data)
+
+                # Test key work in response
                 self.assertIn('yelp', data.keys())
 
+                # Test the response content
+                self.assertListEqual(sorted(data['yelp']), sorted(response_json[0]["yelp"]))
+
+                # Test response was not from cache on 1st request
+                self.assertEqual(data.get("cached"), False)
+
+                # Test cache on second call to same url
+                result = self.app.get('/search/duckduckgo/yelp')
                 # convert response json to dict
                 data = json.loads(result.data)
-                self.assertListEqual(sorted(data['yelp']), sorted(response_json[0]["yelp"]))
+
+                # Test that result on 2nd call was from cache
+                self.assertEqual(data.get("cached"), True)
+
+                # Test disable cache via query string works
+                result = self.app.get('/search/duckduckgo/yelp?use-cache=false')
+                # convert response json to dict
+                data = json.loads(result.data)
+                self.assertEqual(data.get("cached"), False)
