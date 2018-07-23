@@ -26,38 +26,40 @@ cache = redis.StrictRedis(host="localhost", port=6379,
                           db=0, decode_responses=True)
 
 
-@application.route('/search/duckduckgo/<search_term>',
+@application.route('/search/duckduckgo/<searched_term>',
                    methods=['GET'], strict_slashes=False)
-def search(search_term):
+def search(searched_term):
     """
     An api for searching duckduckgo.com.
-    :param search_term:
+    :param searched_term:
     :return:
     """
-    # here we want to get the value of use-cache (i.e. ?use-cache=true)
-    use_cache = request.args.get('use-cache', None)
+    # Here we want to get the value of use-cache (i.e. ?use-cache=true)
+    use_cache = request.args.get('use-cache', "true")
 
-    if use_cache == "false":
+    if use_cache.lower() == "false":
         # Disable cache for this request and pull new info from duckduckgo.
-        context = None
+        context = {}
     else:
-        context = cache.get(search_term)  # Check the cache 1st
+        context = cache.get(searched_term)  # Check the cache 1st
 
     if context:
         context = json.loads(context)
 
     else:
-        # Connect to duckduckgo.com make a search and cache the results.
-        search_engine = DictService()
-        results = search_engine.search_duck_duck_go(search_term)
-        results = DictService.get_top_3(results[0])
+        try:
+            # Connect to duckduckgo.com make a search and cache the results.
+            search_engine = DictService()
+            results = search_engine.search_duck_duck_go(searched_term)  # This method returns a list
+            context = results[0]  # This method returns a list
+        except IndexError:
+            pass
 
-        context = {search_term: results, 'cached': True}
+        # Don't cache searched_term with no results
+        if context:
+            context.update({'cached': True})  # This lets user know they are seeing a cached version
+            cache.set(searched_term, json.dumps(context))
 
-        # Don't cache search_term with no results
-        if results:
-            cache.set(search_term, json.dumps(context))
-
+        # Let user know this is not a cached version
         context.update({'cached': False})
-
-    return jsonify(context)
+    return jsonify(**context)
